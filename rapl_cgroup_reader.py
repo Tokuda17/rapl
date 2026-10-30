@@ -78,6 +78,66 @@ def read_int(path, default=None):
         return default
 
 
+def read_kv(path):
+    """'key value' lines -> {key: int}. Missing file -> {}."""
+    try:
+        return {k: int(v) for k, v in (ln.split() for ln in _read(path).splitlines())}
+    except (OSError, ValueError):
+        return {}
+
+
+def read_pressure(path):
+    """PSI file -> {'some_total_us': .., 'full_total_us': ..} (missing -> {})."""
+    out = {}
+    try:
+        for ln in _read(path).splitlines():
+            parts = ln.split()
+            kind = parts[0]
+            for kv in parts[1:]:
+                k, v = kv.split("=")
+                if k == "total":
+                    out[f"{kind}_total_us"] = int(v)
+    except (OSError, ValueError):
+        pass
+    return out
+
+
+def read_numa_anon(cg):
+    """memory.numa_stat 'anon N0=.. N1=..' -> {'N0': bytes, ...}."""
+    try:
+        for ln in _read(os.path.join(cg, "memory.numa_stat")).splitlines():
+            parts = ln.split()
+            if parts[0] == "anon":
+                return {kv.split("=")[0]: int(kv.split("=")[1]) for kv in parts[1:]}
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
+def cgroup_stats_snapshot(cg):
+    return {"memory_stat": read_kv(os.path.join(cg, "memory.stat")),
+            "memory_pressure": read_pressure(os.path.join(cg, "memory.pressure")),
+            "cpu_pressure": read_pressure(os.path.join(cg, "cpu.pressure")),
+            "io_pressure": read_pressure(os.path.join(cg, "io.pressure"))}
+
+
+def cgroup_stats_delta(before, after, cg, T):
+    ms0, ms1 = before["memory_stat"], after["memory_stat"]
+    def pct(key):
+        a, b = before[key].get("some_total_us"), after[key].get("some_total_us")
+        return round(100 * (b - a) / (T * 1e6), 3) if a is not None and b is not None and T else None
+    return {
+        "pgfault": ms1.get("pgfault", 0) - ms0.get("pgfault", 0),
+        "pgmajfault": ms1.get("pgmajfault", 0) - ms0.get("pgmajfault", 0),
+        "anon_MB_end": round(ms1.get("anon", 0) / 1e6, 1),
+        "file_MB_end": round(ms1.get("file", 0) / 1e6, 1),
+        "numa_anon_MB_end": {k: round(v / 1e6, 1) for k, v in read_numa_anon(cg).items()},
+        "memory_pressure_some_pct": pct("memory_pressure"),
+        "cpu_pressure_some_pct": pct("cpu_pressure"),
+        "io_pressure_some_pct": pct("io_pressure"),
+    }
+
+
 def busy_jiffies(cpus=None):
     """Non-idle jiffies summed over `cpus` (set of ids), or all CPUs if None."""
     total = 0
@@ -186,6 +246,7 @@ def sample_loop(domains, cg, scope, interval, duration=None, proc=None):
     cum_job_cpu = cum_scope_busy = cum_node_busy = 0.0
     attr_pkg = attr_dram = 0.0
     mem_peak = 0
+    numa_peak = {}
 
     def row(t):
         return {
@@ -225,11 +286,13 @@ def sample_loop(domains, cg, scope, interval, duration=None, proc=None):
         cum_scope_busy += d_busy
         cum_node_busy += (cur_node_busy - prev_node_busy) / CLK_TCK
         mem_peak = max(mem_peak, read_int(os.path.join(cg, "memory.peak"), 0))
+        for k, v in read_numa_anon(cg).items():
+            numa_peak[k] = max(numa_peak.get(k, 0), v)
         prev_e, prev_cpu, prev_busy, prev_node_busy = cur_e, cur_cpu, cur_busy, cur_node_busy
         samples.append(row(now - t0))
         if done:
             break
-    return samples, mem_peak
+    return samples, mem_peak, numa_peak
 
 
 def summarize(domains, samples, mem_peak, scope):
@@ -266,7 +329,7 @@ def summarize(domains, samples, mem_peak, scope):
     }
 
 
-def render_md(meta, cg, scope, tot):
+def render_md(meta, cg, scope, tot, cgs=None):
     L = [f"### {meta['label']}", "",
          f"- host: `{meta['hostname']}`  cpu: {meta['cpu']}",
          f"- duration: {tot['duration_s']:.2f} s, samples: {meta['n_samples']}, interval: {meta['interval_s']} s"]
@@ -279,7 +342,12 @@ def render_md(meta, cg, scope, tot):
           f"| CPU time used (s) | {tot['job_cpu_s']:.2f} |",
           f"| avg cores busy | {tot['job_avg_cores_busy']:.2f} |",
           f"| share of busy CPU time on its socket(s) | {100 * (tot['job_share_of_scope_cpu'] or 0):.1f}% |",
-          f"| peak memory (MB) | {tot['job_mem_peak_MB']:.1f} |",
+          f"| peak memory (MB) | {tot['job_mem_peak_MB']:.1f} |"]
+    if cgs:
+        L += [f"| page faults (major) | {cgs['pgfault']} ({cgs['pgmajfault']}) |",
+              f"| peak anon memory by NUMA node (MB) | {cgs.get('numa_anon_MB_peak', cgs['numa_anon_MB_end'])} |",
+              f"| memory / cpu pressure, some (%) | {cgs['memory_pressure_some_pct']} / {cgs['cpu_pressure_some_pct']} |"]
+    L += [
           f"| attributed package energy (J) | {tot['attributed_package_J']:.2f} |",
           f"| attributed package power (W) | {tot['attributed_package_avg_W']:.2f} |",
           f"| attributed DRAM energy (J) | {tot['attributed_dram_J']:.2f} |",
@@ -317,10 +385,14 @@ def main():
 
     cg_info = cgroup_info(cg)
     scope = attribution_scope(domains, cg_info)
+    snap0 = cgroup_stats_snapshot(cg)
     proc = subprocess.Popen(cmd) if cmd else None
-    samples, mem_peak = sample_loop(domains, cg, scope, args.interval, None if cmd else args.duration, proc)
+    samples, mem_peak, numa_peak = sample_loop(domains, cg, scope, args.interval, None if cmd else args.duration, proc)
     exit_code = proc.wait() if proc else None
+    snap1 = cgroup_stats_snapshot(cg)
     tot = summarize(domains, samples, mem_peak, scope)
+    cg_stats = cgroup_stats_delta(snap0, snap1, cg, tot["duration_s"])
+    cg_stats["numa_anon_MB_peak"] = {k: round(v / 1e6, 1) for k, v in numa_peak.items()}
 
     meta = {
         "label": args.label or os.path.basename(args.out),
@@ -343,9 +415,9 @@ def main():
                        [f"{s['job_cpu_s']:.4f}", f"{s['scope_busy_cpu_s']:.4f}", f"{s['node_busy_cpu_s']:.4f}", f"{s['job_mem_MB']:.2f}",
                         f"{s['attributed_package_J']:.6f}", f"{s['attributed_dram_J']:.6f}"])
     with open(args.out + ".json", "w") as f:
-        json.dump({"meta": meta, "cgroup": cg_info, "attribution_scope": scope_pub, "rapl_domains": domains,
-                   "totals": tot, "samples": samples}, f, indent=2)
-    md = render_md(meta, cg_info, scope_pub, tot)
+        json.dump({"meta": meta, "cgroup": cg_info, "cgroup_stats": cg_stats, "attribution_scope": scope_pub,
+                   "rapl_domains": domains, "totals": tot, "samples": samples}, f, indent=2)
+    md = render_md(meta, cg_info, scope_pub, tot, cg_stats)
     with open(args.out + ".md", "w") as f:
         f.write(md)
     print(md)
