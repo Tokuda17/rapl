@@ -1,0 +1,10 @@
+CPU(s):                                  24
+Model name:                              Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz
+Thread(s) per core:                      1
+Socket(s):                               2
+CPU(s) scaling MHz:                      70%
+L2 cache:                                24 MiB (24 instances)
+L3 cache:                                38.5 MiB (2 instances)
+NUMA node(s):                            2
+NUMA node0 CPU(s):                       0-11
+NUMA node1 CPU(s):                       12-23

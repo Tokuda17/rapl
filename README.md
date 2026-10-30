@@ -136,3 +136,33 @@ Reading the data:
 - Package-0 power climbs from 97 W idle to 130 W at 8 cores, about 4 W per added core, and the slope steepens slightly past 4 cores as the socket spends less time in low-power states. Package-1 holds near 87 W.
 - Unlike the earlier sweep, other users were active on socket 0 this time (3 to 11 cores busy that were not ours), so the `job share` column is lower and the attributed power is a smaller slice of the socket total. Attributed power still rises linearly with cores, from 24 W at 1 core to 92 W at 8.
 - The idle baseline of 97 W is 8 W above the earlier run's 89 W for the same reason: the socket was not truly idle.
+
+## Memory access vs power: job 6674770 (2026-10-30)
+
+`run_memory_sweep.sbatch` holds CPU usage at 8 cores and changes only how far the data is from the cores. `workloads/memstream.py` runs 8 processes, each sweeping a = b + c over three arrays (STREAM-style) sized to a working set from 1 MB to 1 GB per process. A second part fixes the working set at 1 GB and varies the process count. `rapl_cgroup_reader.py` now also records page faults, peak anonymous memory per NUMA node, and pressure-stall time from the cgroup. Node `atl1-1-02-010-4-1` (2x Intel Xeon Gold 6226, 12 cores and 38.5 MB L3 per socket), job on socket 0 CPUs 3-10. Full data in [`results/mem_6674770_atl1-1-02-010-4-1/`](results/mem_6674770_atl1-1-02-010-4-1/).
+
+![Memory access vs power](results/mem_6674770_atl1-1-02-010-4-1/memory_vs_power.png)
+
+| run | job cores busy | package-0 W | package-1 W | DRAM-0 W | DRAM-1 W | peak mem MB | page faults | peak anon by NUMA node (MB) | mem pressure % |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| w0_idle | 0.00 | 50.2 | 47.5 | 4.3 | 3.6 | 10 | 13 | {'N0': 7.7, 'N1': 0.1} | None |
+| m1 | 7.75 | 89.5 | 47.5 | 4.3 | 3.6 | 152 | 41636 | {'N0': 146.4, 'N1': 0.1} | None |
+| m4 | 7.71 | 95.4 | 46.8 | 14.2 | 3.6 | 176 | 47442 | {'N0': 170.5, 'N1': 0.1} | None |
+| m16 | 7.73 | 91.3 | 46.7 | 16.7 | 3.6 | 273 | 50380 | {'N0': 266.5, 'N1': 0.1} | None |
+| m64 | 7.74 | 90.1 | 46.7 | 16.7 | 3.6 | 658 | 50229 | {'N0': 650.6, 'N1': 0.1} | None |
+| m256 | 7.75 | 92.1 | 46.8 | 16.7 | 3.6 | 2196 | 53024 | {'N0': 2186.2, 'N1': 0.1} | None |
+| m1024 | 7.82 | 91.1 | 46.7 | 16.8 | 3.6 | 8352 | 56845 | {'N0': 8330.3, 'N1': 0.1} | None |
+| p1 | 0.98 | 58.0 | 47.2 | 7.3 | 3.6 | 8352 | 9845 | {'N0': 1053.3, 'N1': 0.1} | None |
+| p2 | 1.96 | 63.9 | 46.6 | 9.5 | 3.6 | 8352 | 16571 | {'N0': 2092.9, 'N1': 0.1} | None |
+| p4 | 3.91 | 75.9 | 46.6 | 14.0 | 3.6 | 8352 | 30008 | {'N0': 4172.0, 'N1': 0.1} | None |
+| p8 | 7.82 | 91.4 | 47.1 | 16.8 | 3.6 | 8352 | 56849 | {'N0': 8330.3, 'N1': 0.1} | None |
+
+Reading the data:
+
+- DRAM-0 power is flat at the 4.3 W idle floor when each process's 1 MB working set fits in its core's L2 (1.0 MB on this chip, with per-process bandwidth near 50 GB/s). At 4 MB per process the 8 processes together need 32 MB, close to the socket's 38.5 MB L3, and DRAM power jumps to 14.2 W. From 16 MB upward every access streams from memory and DRAM-0 saturates at 16.7 W with about 9 GB/s per process, 72 GB/s total. That knee is the cache hierarchy's size measured by energy.
+- Package-0 stayed near 90 W across the whole working-set sweep while the cgroup reported 7.7 cores busy throughout. The same CPU utilization costs the same package power whether the cores are computing from cache or stalled on memory, but the memory side adds up to 12 W on top.
+- In the process sweep, DRAM-0 rises with each streaming process (7.3, 9.5, 14.0, 16.8 W for 1, 2, 4, 8) while per-process bandwidth drops from 13.4 to 9 GB/s at 8 processes, the point where the socket's memory bandwidth is exhausted.
+- DRAM-1 and package-1 on the other socket never moved, and the cgroup's NUMA accounting confirms all job memory (up to 8.3 GB) sat on node 0, so DRAM-0 is the right counter.
+- The `peak mem MB` column reads 8352 for p1 through p4 because `memory.peak` is a cumulative high-water mark for the cgroup and this kernel (5.14) cannot reset it. The per-NUMA-node column, sampled during each run, gives the true peak. Pressure-stall files are not exposed in the job cgroup on these nodes.
+
+Regenerate with `python3 plot_memory.py results/mem_6674770_atl1-1-02-010-4-1`.
