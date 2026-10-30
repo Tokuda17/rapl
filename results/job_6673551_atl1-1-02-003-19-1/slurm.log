@@ -1,0 +1,61 @@
+---------------------------------------
+Begin Slurm Prolog: Oct-30-2026 12:17:38
+Job ID:    6673551
+User ID:   mtokuda3
+Account:   coc
+Job name:  rapl-read
+Partition: coc-cpu
+QOS:       coc-ice
+---------------------------------------
+node: atl1-1-02-003-19-1.pace.gatech.edu  job: 6673551  cpus: 8
+kernel: 5.14.0-687.49.1.el9_8.x86_64
+CPU(s):                                  24
+Model name:                              Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz
+Socket(s):                               2
+CPU(s) scaling MHz:                      68%
+
+RAPL domains:
+intel-rapl:0     package-0            max_energy_range_uj=262143328850  /sys/class/powercap/intel-rapl:0/energy_uj
+intel-rapl:0:0   package-0/dram       max_energy_range_uj=65712999613  /sys/class/powercap/intel-rapl:0:0/energy_uj
+intel-rapl:1     package-1            max_energy_range_uj=262143328850  /sys/class/powercap/intel-rapl:1/energy_uj
+intel-rapl:1:0   package-1/dram       max_energy_range_uj=65712999613  /sys/class/powercap/intel-rapl:1:0/energy_uj
+
+### RAPL summary: idle baseline (15s)
+
+- host: `atl1-1-02-003-19-1.pace.gatech.edu`  cpu: Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz
+- duration: 15.00 s, samples: 17, interval: 1.0 s
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 708.397 | 47.22 |
+| package-0/dram | 331.045 | 22.07 |
+| package-1 | 777.245 | 51.81 |
+| package-1/dram | 308.386 | 20.56 |
+
+workload: 8 processes x 30.0s
+### RAPL summary: cpu workload (8 procs, 30s)
+
+- host: `atl1-1-02-003-19-1.pace.gatech.edu`  cpu: Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz
+- duration: 31.00 s, samples: 33, interval: 1.0 s
+- command: `python3 workload.py --seconds 30 --procs 8` (exit 0)
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 1838.373 | 59.30 |
+| package-0/dram | 697.724 | 22.51 |
+| package-1 | 1740.829 | 56.15 |
+| package-1/dram | 645.827 | 20.83 |
+
+wrote results/job_6673551_atl1-1-02-003-19-1/summary.md
+---------------------------------------
+Begin Slurm Epilog: Oct-30-2026 12:18:25
+Job ID:        6673551
+User ID:       mtokuda3
+Account:       coc
+Job name:      rapl-read
+Resources:     cpu=8,mem=8G,node=1
+Rsrc Used:     cput=00:06:16,vmem=0,walltime=00:00:47,mem=321572K,energy_used=0
+Partition:     coc-cpu
+QOS:           coc-ice
+Nodes:         atl1-1-02-003-19-1
+---------------------------------------

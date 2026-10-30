@@ -1,0 +1,4 @@
+CPU(s):                                  24
+Model name:                              Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz
+Socket(s):                               2
+CPU(s) scaling MHz:                      68%
