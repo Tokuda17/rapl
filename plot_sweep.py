@@ -67,7 +67,7 @@ def label_points(ax, rows, ykey, first="left"):
     them apart instead of stacking them."""
     for i, r in enumerate(rows):
         if i == 0:
-            kw = dict(xytext=(-7, -4), ha="right", va="top") if first == "left" else dict(xytext=(9, -2), ha="left", va="top")
+            kw = dict(xytext=(-7, -4), ha="right", va="top") if first == "left" else dict(xytext=(9, 4), ha="left", va="bottom")
         elif i == 1:
             kw = dict(xytext=(7, 4), ha="left", va="bottom")
         else:
@@ -116,8 +116,8 @@ def main(d):
     a2.plot(x, [r["attr_W"] for r in rows], color=BLUE, **mk, label="attributed to job")
     if base is not None:
         a2.axhline(base, color=INK2, lw=1, ls=(0, (4, 3)))
-        a2.annotate(f"socket idle power {base:.0f} W", (max(x), base), xytext=(0, -12), textcoords="offset points",
-                    ha="right", fontsize=8.5, color=INK2)
+        a2.annotate(f"socket idle power {base:.0f} W", (min(x), base), xytext=(2, 4), textcoords="offset points",
+                    ha="left", va="bottom", fontsize=8.5, color=INK2)
     label_points(a2, rows, lambda r: r["attr_W"], first="right")
     a2.set_title("Package power attributed to this job", loc="left", fontsize=11, color=INK, pad=10)
     a2.set_ylabel("watts (job share of its socket's package energy)", color=INK2, fontsize=9)

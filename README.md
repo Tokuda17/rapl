@@ -112,3 +112,27 @@ Reading the data:
 - DRAM power barely moved (27.8 to 28.2 W on socket 0): these workloads fit in cache.
 
 To regenerate the plot and table locally (needs matplotlib): `python3 plot_sweep.py results/sweep_6674363_atl1-1-03-020-34-0`.
+
+## Energy vs cores, 1 through 8: job 6674535 (2026-10-30)
+
+`run_cores_sweep.sbatch` repeats the measurement with one numpy process per core count, 1 to 8, using `workloads/ncores.py --procs N`. Same node (`atl1-1-03-020-34-0`, socket 0, CPUs 20-27), 30 s per level. Full data in [`results/cores_6674535_atl1-1-03-020-34-0/`](results/cores_6674535_atl1-1-03-020-34-0/).
+
+![Energy vs cores](results/cores_6674535_atl1-1-03-020-34-0/energy_vs_cpu.png)
+
+| workload | job cores busy | socket cores busy (all users) | job share | package-0 W | package-1 W | dram-0 W | dram-1 W | attributed package J | attributed package W | peak mem MB |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| w0_idle | 0.00 | 3.06 | 0% | 97.4 | 92.5 | 27.9 | 32.4 | 1 | 0.0 | 12 |
+| c1 | 0.97 | 4.17 | 23% | 102.3 | 91.8 | 27.9 | 32.9 | 737 | 23.8 | 56 |
+| c2 | 1.93 | 5.42 | 36% | 101.8 | 87.9 | 28.0 | 32.6 | 1117 | 36.0 | 96 |
+| c3 | 2.90 | 6.06 | 48% | 104.1 | 87.8 | 28.0 | 32.3 | 1536 | 49.5 | 134 |
+| c4 | 3.86 | 6.88 | 56% | 107.8 | 86.2 | 28.0 | 32.2 | 1861 | 60.0 | 174 |
+| c5 | 4.83 | 8.09 | 60% | 115.2 | 87.4 | 28.0 | 32.5 | 2109 | 68.0 | 213 |
+| c6 | 5.77 | 9.03 | 64% | 121.9 | 88.4 | 28.1 | 32.6 | 2391 | 77.1 | 252 |
+| c7 | 6.75 | 10.05 | 67% | 124.2 | 87.4 | 28.1 | 32.5 | 2570 | 82.9 | 292 |
+| c8 | 7.70 | 10.82 | 71% | 129.7 | 87.2 | 28.1 | 32.5 | 2838 | 91.5 | 330 |
+
+Reading the data:
+
+- Package-0 power climbs from 97 W idle to 130 W at 8 cores, about 4 W per added core, and the slope steepens slightly past 4 cores as the socket spends less time in low-power states. Package-1 holds near 87 W.
+- Unlike the earlier sweep, other users were active on socket 0 this time (3 to 11 cores busy that were not ours), so the `job share` column is lower and the attributed power is a smaller slice of the socket total. Attributed power still rises linearly with cores, from 24 W at 1 core to 92 W at 8.
+- The idle baseline of 97 W is 8 W above the earlier run's 89 W for the same reason: the socket was not truly idle.
