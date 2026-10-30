@@ -1,0 +1,5 @@
+CPU(s):                                  96
+Model name:                              Intel(R) Xeon(R) 6740P
+Thread(s) per core:                      1
+Socket(s):                               2
+CPU(s) scaling MHz:                      48%
