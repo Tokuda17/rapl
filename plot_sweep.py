@@ -37,7 +37,7 @@ def per_socket(domains, kind):
 
 def load(d):
     rows = []
-    for p in sorted(glob.glob(os.path.join(d, "w*.json"))):
+    for p in sorted(glob.glob(os.path.join(d, "w*.json")) + glob.glob(os.path.join(d, "c*.json"))):
         j = json.load(open(p))
         t = j["totals"]
         job_sockets = j["cgroup"].get("sockets") or []
@@ -58,6 +58,7 @@ def load(d):
             "mem": t["job_mem_peak_MB"],
             "meta": j["meta"],
         })
+    rows.sort(key=lambda r: r["cores"])
     return rows
 
 
@@ -152,4 +153,4 @@ def main(d):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else sorted(glob.glob("results/sweep_*"))[-1])
+    main(sys.argv[1] if len(sys.argv) > 1 else sorted(glob.glob("results/sweep_*") + glob.glob("results/cores_*"), key=os.path.getmtime)[-1])
