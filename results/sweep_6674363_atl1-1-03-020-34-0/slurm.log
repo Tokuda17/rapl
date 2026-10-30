@@ -1,0 +1,234 @@
+---------------------------------------
+Begin Slurm Prolog: Oct-30-2026 14:43:31
+Job ID:    6674363
+User ID:   mtokuda3
+Account:   coc
+Job name:  rapl-sweep
+Partition: ice-bw-cpu
+QOS:       coc-ice
+---------------------------------------
+node: atl1-1-03-020-34-0.pace.gatech.edu  job: 6674363  cpus: 8  kernel: 5.14.0-687.49.1.el9_8.x86_64
+CPU(s):                                  96
+Model name:                              Intel(R) Xeon(R) 6740P
+Thread(s) per core:                      1
+Socket(s):                               2
+CPU(s) scaling MHz:                      52%
+cgroup: 0::/system.slice/slurmstepd.scope/s8FXM671ZWCK00/step_batch/user/task_0
+intel-rapl:0     package-0            max_energy_range_uj=262143328850  /sys/class/powercap/intel-rapl:0/energy_uj
+intel-rapl:0:0   package-0/dram       max_energy_range_uj=262143328850  /sys/class/powercap/intel-rapl:0:0/energy_uj
+intel-rapl:1     package-1            max_energy_range_uj=262143328850  /sys/class/powercap/intel-rapl:1/energy_uj
+intel-rapl:1:0   package-1/dram       max_energy_range_uj=262143328850  /sys/class/powercap/intel-rapl:1:0/energy_uj
+
+### w0_idle: idle baseline (20s)
+
+- host: `atl1-1-03-020-34-0.pace.gatech.edu`  cpu: Intel(R) Xeon(R) 6740P
+- duration: 20.00 s, samples: 22, interval: 1.0 s
+- cgroup: `/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM671ZWCK00`  cpus: 0-1,14-19 on socket(s) [0]
+- attribution scope: package-0 (48 CPUs)
+
+**Job (from cgroup)**
+
+| metric | value |
+|---|---:|
+| CPU time used (s) | 0.02 |
+| avg cores busy | 0.00 |
+| share of busy CPU time on its socket(s) | 0.4% |
+| peak memory (MB) | 11.1 |
+| attributed package energy (J) | 60.74 |
+| attributed package power (W) | 3.04 |
+| attributed DRAM energy (J) | 18.98 |
+
+**Node (from RAPL)**
+
+avg cores busy, all users: 0.27 on job socket(s), 0.45 whole node
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 1786.953 | 89.34 |
+| package-0/dram | 557.202 | 27.86 |
+| package-1 | 1692.039 | 84.59 |
+| package-1/dram | 644.082 | 32.20 |
+
+
+================ w1_light
+workload: 1 process(es) x 30.0s of burn_duty_cycle
+### w1_light (30s)
+
+- host: `atl1-1-03-020-34-0.pace.gatech.edu`  cpu: Intel(R) Xeon(R) 6740P
+- duration: 31.00 s, samples: 33, interval: 1.0 s
+- command: `python3 workloads/w1_light.py --seconds 30` (exit 0)
+- cgroup: `/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM671ZWCK00`  cpus: 0-1,14-19 on socket(s) [0]
+- attribution scope: package-0 (48 CPUs)
+
+**Job (from cgroup)**
+
+| metric | value |
+|---|---:|
+| CPU time used (s) | 6.05 |
+| avg cores busy | 0.20 |
+| share of busy CPU time on its socket(s) | 89.4% |
+| peak memory (MB) | 18.8 |
+| attributed package energy (J) | 2451.45 |
+| attributed package power (W) | 79.07 |
+| attributed DRAM energy (J) | 761.28 |
+
+**Node (from RAPL)**
+
+avg cores busy, all users: 0.22 on job socket(s), 0.24 whole node
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 2777.410 | 89.59 |
+| package-0/dram | 862.742 | 27.83 |
+| package-1 | 2624.665 | 84.66 |
+| package-1/dram | 997.858 | 32.19 |
+
+
+================ w2_single_core
+workload: 1 process(es) x 30.0s of burn_python
+### w2_single_core (30s)
+
+- host: `atl1-1-03-020-34-0.pace.gatech.edu`  cpu: Intel(R) Xeon(R) 6740P
+- duration: 31.00 s, samples: 33, interval: 1.0 s
+- command: `python3 workloads/w2_single_core.py --seconds 30` (exit 0)
+- cgroup: `/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM671ZWCK00`  cpus: 0-1,14-19 on socket(s) [0]
+- attribution scope: package-0 (48 CPUs)
+
+**Job (from cgroup)**
+
+| metric | value |
+|---|---:|
+| CPU time used (s) | 29.98 |
+| avg cores busy | 0.97 |
+| share of busy CPU time on its socket(s) | 87.9% |
+| peak memory (MB) | 18.8 |
+| attributed package energy (J) | 2689.86 |
+| attributed package power (W) | 86.76 |
+| attributed DRAM energy (J) | 807.95 |
+
+**Node (from RAPL)**
+
+avg cores busy, all users: 1.10 on job socket(s), 1.22 whole node
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 2872.969 | 92.67 |
+| package-0/dram | 862.936 | 27.84 |
+| package-1 | 2626.896 | 84.73 |
+| package-1/dram | 998.581 | 32.21 |
+
+
+================ w3_two_cores
+workload: 2 process(es) x 30.0s of burn_numpy
+### w3_two_cores (30s)
+
+- host: `atl1-1-03-020-34-0.pace.gatech.edu`  cpu: Intel(R) Xeon(R) 6740P
+- duration: 31.00 s, samples: 33, interval: 1.0 s
+- command: `python3 workloads/w3_two_cores.py --seconds 30` (exit 0)
+- cgroup: `/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM671ZWCK00`  cpus: 0-1,14-19 on socket(s) [0]
+- attribution scope: package-0 (48 CPUs)
+
+**Job (from cgroup)**
+
+| metric | value |
+|---|---:|
+| CPU time used (s) | 59.93 |
+| avg cores busy | 1.93 |
+| share of busy CPU time on its socket(s) | 97.9% |
+| peak memory (MB) | 95.4 |
+| attributed package energy (J) | 2938.65 |
+| attributed package power (W) | 94.79 |
+| attributed DRAM energy (J) | 843.15 |
+
+**Node (from RAPL)**
+
+avg cores busy, all users: 1.98 on job socket(s), 2.00 whole node
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 3004.574 | 96.92 |
+| package-0/dram | 862.150 | 27.81 |
+| package-1 | 2625.583 | 84.69 |
+| package-1/dram | 999.345 | 32.23 |
+
+
+================ w4_half_cores
+workload: 4 process(es) x 30.0s of burn_numpy
+### w4_half_cores (30s)
+
+- host: `atl1-1-03-020-34-0.pace.gatech.edu`  cpu: Intel(R) Xeon(R) 6740P
+- duration: 31.00 s, samples: 33, interval: 1.0 s
+- command: `python3 workloads/w4_half_cores.py --seconds 30` (exit 0)
+- cgroup: `/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM671ZWCK00`  cpus: 0-1,14-19 on socket(s) [0]
+- attribution scope: package-0 (48 CPUs)
+
+**Job (from cgroup)**
+
+| metric | value |
+|---|---:|
+| CPU time used (s) | 119.78 |
+| avg cores busy | 3.86 |
+| share of busy CPU time on its socket(s) | 97.2% |
+| peak memory (MB) | 174.4 |
+| attributed package energy (J) | 3178.86 |
+| attributed package power (W) | 102.54 |
+| attributed DRAM energy (J) | 845.11 |
+
+**Node (from RAPL)**
+
+avg cores busy, all users: 3.98 on job socket(s), 4.06 whole node
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 3254.568 | 104.98 |
+| package-0/dram | 865.170 | 27.91 |
+| package-1 | 2627.172 | 84.74 |
+| package-1/dram | 999.945 | 32.25 |
+
+
+================ w5_all_cores
+workload: 8 process(es) x 30.0s of burn_numpy
+### w5_all_cores (30s)
+
+- host: `atl1-1-03-020-34-0.pace.gatech.edu`  cpu: Intel(R) Xeon(R) 6740P
+- duration: 31.00 s, samples: 33, interval: 1.0 s
+- command: `python3 workloads/w5_all_cores.py --seconds 30` (exit 0)
+- cgroup: `/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM671ZWCK00`  cpus: 0-1,14-19 on socket(s) [0]
+- attribution scope: package-0 (48 CPUs)
+
+**Job (from cgroup)**
+
+| metric | value |
+|---|---:|
+| CPU time used (s) | 239.42 |
+| avg cores busy | 7.72 |
+| share of busy CPU time on its socket(s) | 99.1% |
+| peak memory (MB) | 331.2 |
+| attributed package energy (J) | 3607.07 |
+| attributed package power (W) | 116.35 |
+| attributed DRAM energy (J) | 864.55 |
+
+**Node (from RAPL)**
+
+avg cores busy, all users: 7.80 on job socket(s), 7.82 whole node
+
+| domain | energy (J) | avg power (W) |
+|---|---:|---:|
+| package-0 | 3642.503 | 117.49 |
+| package-0/dram | 873.140 | 28.16 |
+| package-1 | 2630.923 | 84.86 |
+| package-1/dram | 1000.222 | 32.26 |
+
+wrote results/sweep_6674363_atl1-1-03-020-34-0/summary.md
+---------------------------------------
+Begin Slurm Epilog: Oct-30-2026 14:46:27
+Job ID:        6674363
+User ID:       mtokuda3
+Account:       coc
+Job name:      rapl-sweep
+Resources:     cpu=8,mem=8G,node=1
+Rsrc Used:     cput=00:23:28,vmem=0,walltime=00:02:56,mem=320396K,energy_used=0
+Partition:     ice-bw-cpu
+QOS:           coc-ice
+Nodes:         atl1-1-03-020-34-0
+---------------------------------------
