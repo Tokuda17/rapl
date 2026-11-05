@@ -134,12 +134,12 @@ To regenerate the plot and table locally (needs matplotlib): `python3 plot_sweep
 Reading the data:
 
 - Package-0 power climbs from 97 W idle to 130 W at 8 cores, about 4 W per added core, and the slope steepens slightly past 4 cores as the socket spends less time in low-power states. Package-1 holds near 87 W.
-- Unlike the earlier sweep, other users were active on socket 0 this time (3 to 11 cores busy that were not ours), so the `job share` column is lower and the attributed power is a smaller slice of the socket total. Attributed power still rises linearly with cores, from 24 W at 1 core to 92 W at 8.
+- Unlike the earlier sweep, other users were active on socket 0 this time (about 3 cores busy that were not ours), so the `job share` column is lower and the attributed power is a smaller slice of the socket total. Attributed power still rises linearly with cores, from 24 W at 1 core to 92 W at 8.
 - The idle baseline of 97 W is 8 W above the earlier run's 89 W for the same reason: the socket was not truly idle.
 
 ## Memory access vs power: job 6674770 (2026-10-30)
 
-`run_memory_sweep.sbatch` holds CPU usage at 8 cores and changes only how far the data is from the cores. `workloads/memstream.py` runs 8 processes, each sweeping a = b + c over three arrays (STREAM-style) sized to a working set from 1 MB to 1 GB per process. A second part fixes the working set at 1 GB and varies the process count. `rapl_cgroup_reader.py` now also records page faults, peak anonymous memory per NUMA node, and pressure-stall time from the cgroup. Node `atl1-1-02-010-4-1` (2x Intel Xeon Gold 6226, 12 cores and 38.5 MB L3 per socket), job on socket 0 CPUs 3-10. Full data in [`results/mem_6674770_atl1-1-02-010-4-1/`](results/mem_6674770_atl1-1-02-010-4-1/).
+`run_memory_sweep.sbatch` holds CPU usage at 8 cores and changes only how far the data is from the cores. `workloads/memstream.py` runs 8 processes, each sweeping a = b + c over three arrays (STREAM-style) sized to a working set from 1 MB to 1 GB per process. A second part fixes the working set at 1 GB and varies the process count. `rapl_cgroup_reader.py` now also records page faults, peak anonymous memory per NUMA node, and pressure-stall time from the cgroup. Node `atl1-1-02-010-4-1` (2x Intel Xeon Gold 6226, 12 cores, 1 MB L2 per core and 19.25 MB L3 per socket), job on socket 0 CPUs 3-10. Full data in [`results/mem_6674770_atl1-1-02-010-4-1/`](results/mem_6674770_atl1-1-02-010-4-1/).
 
 ![Memory access vs power](results/mem_6674770_atl1-1-02-010-4-1/memory_vs_power.png)
 
@@ -159,7 +159,7 @@ Reading the data:
 
 Reading the data:
 
-- DRAM-0 power is flat at the 4.3 W idle floor when each process's 1 MB working set fits in its core's L2 (1.0 MB on this chip, with per-process bandwidth near 50 GB/s). At 4 MB per process the 8 processes together need 32 MB, close to the socket's 38.5 MB L3, and DRAM power jumps to 14.2 W. From 16 MB upward every access streams from memory and DRAM-0 saturates at 16.7 W with about 9 GB/s per process, 72 GB/s total. That knee is the cache hierarchy's size measured by energy.
+- DRAM-0 power is flat at the 4.3 W idle floor when each process's 1 MB working set fits in its core's L2 (1.0 MB on this chip, with per-process bandwidth near 50 GB/s). At 4 MB per process the 8 processes together need 32 MB, more than the socket's 19.25 MB L3 can hold, and DRAM power jumps to 14.2 W. From 16 MB upward every access streams from memory and DRAM-0 saturates at 16.7 W with about 9 GB/s per process, 72 GB/s total. That knee is the cache hierarchy's size measured by energy.
 - Package-0 stayed near 90 W across the whole working-set sweep while the cgroup reported 7.7 cores busy throughout. The same CPU utilization costs the same package power whether the cores are computing from cache or stalled on memory, but the memory side adds up to 12 W on top.
 - In the process sweep, DRAM-0 rises with each streaming process (7.3, 9.5, 14.0, 16.8 W for 1, 2, 4, 8) while per-process bandwidth drops from 13.4 to 9 GB/s at 8 processes, the point where the socket's memory bandwidth is exhausted.
 - DRAM-1 and package-1 on the other socket never moved, and the cgroup's NUMA accounting confirms all job memory (up to 8.3 GB) sat on node 0, so DRAM-0 is the right counter.
