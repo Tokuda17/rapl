@@ -89,7 +89,7 @@ to the same runs:
 Reading the data:
 
 - The term is within about 5% for memory-bound runs. At low traffic it
-  underestimates by 20 to 30%, because DRAM has its own power states and a
+  underestimates by 20 to 40%, because DRAM has its own power states and a
   lightly used channel costs more per byte than a saturated one. A second
   calibration constant for the low-traffic regime would fix most of that.
 - The matmul control (`cpu8`) was not cache-resident on this node: 8 processes
