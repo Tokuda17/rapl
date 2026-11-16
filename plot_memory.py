@@ -43,7 +43,7 @@ def load(d):
             "name": name, "kind": m.group(1) if m else "idle", "val": int(m.group(2)) if m else 0,
             "cores": t["job_avg_cores_busy"], "pkg": per_socket(t["domains"], "pkg"), "dram": per_socket(t["domains"], "dram"),
             "mem": t["job_mem_peak_MB"], "stats": j.get("cgroup_stats", {}), "sockets": j["cgroup"].get("sockets", []),
-            "attr_dram_W": t["attributed_dram_avg_W"], "meta": j["meta"],
+            "attr_dram_W": t["attributed_dram_avg_W"], "perf_GBps": t.get("job_dram_GBps_est"), "meta": j["meta"],
         })
     return rows
 
@@ -142,13 +142,13 @@ def main(d):
 
     hdr = ["run", "job cores busy", f"package-{js} W"] + ([f"package-{ctl} W"] if ctl is not None else []) + \
           [f"DRAM-{js} W"] + ([f"DRAM-{ctl} W"] if ctl is not None else []) + \
-          ["peak mem MB", "page faults", "peak anon by NUMA node (MB)", "mem pressure %"]
+          ["peak mem MB", "page faults", "peak anon by NUMA node (MB)", "DRAM GB/s (perf)"]
     md = ["| " + " | ".join(hdr) + " |", "|---|" + "---:|" * (len(hdr) - 1)]
     for r in ([idle] if idle else []) + A + B:
         st = r["stats"]
         cells = [r["name"], f"{r['cores']:.2f}", f"{r['pkg'][js]:.1f}"] + ([f"{r['pkg'][ctl]:.1f}"] if ctl is not None else []) + \
                 [f"{r['dram'][js]:.1f}"] + ([f"{r['dram'][ctl]:.1f}"] if ctl is not None else []) + \
-                [f"{r['mem']:.0f}", str(st.get("pgfault", "")), str(st.get("numa_anon_MB_peak", st.get("numa_anon_MB_end", ""))), str(st.get("memory_pressure_some_pct", ""))]
+                [f"{r['mem']:.0f}", str(st.get("pgfault", "")), str(st.get("numa_anon_MB_peak", st.get("numa_anon_MB_end", ""))), ("" if r["perf_GBps"] is None else f"{r['perf_GBps']:.2f}")]
         md.append("| " + " | ".join(cells) + " |")
     table = "\n".join(md) + "\n"
     open(os.path.join(d, "memory_table.md"), "w").write(table)

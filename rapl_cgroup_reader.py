@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
 """
-rapl_cgroup_reader.py - sample Intel RAPL energy AND the job's cgroup v2
-accounting together, so socket energy can be attributed to the job.
+rapl_cgroup_reader.py - sample Intel RAPL energy, the job's cgroup v2
+accounting, and (optionally) the job's hardware cache-miss counters together,
+so socket energy can be attributed to the job.
 
-Each interval records, for the whole node, the RAPL energy of every domain,
-and for the job's cgroup, CPU time (cpu.stat) and memory (memory.current).
-From the cgroup's cpuset it works out which socket(s) the job may run on, and
-reads busy CPU time for just those sockets' CPUs from /proc/stat. The job's
-share of each interval's energy on those sockets is
+Each interval records, for the whole node, the RAPL energy of every domain;
+for the job's cgroup, CPU time (cpu.stat) and memory (memory.current); and,
+when a command is run, its last-level-cache misses via perf_event_open
+(perfcount.py), which estimate the bytes the job pulled from DRAM.
 
-    job_cpu_time / busy_cpu_time_on_job_sockets   (capped at 1)
+Attribution:
+  package  job_cpu_time / busy_cpu_time_on_job_sockets  x  package energy of
+           those sockets (capped at 1)
+  memory   LLC misses x 64 bytes x E_BYTE, where E_BYTE (J/byte) comes from
+           calibrate_memory.py on an exclusive node (--e-byte)
 
-and "attributed" energy is that share applied to the package (and DRAM)
-domains of those sockets only. Sockets the job cannot touch are excluded.
-
-Outputs (for --out PREFIX):
-  PREFIX.csv   t_s, per-domain cumulative energy_J, job_cpu_s, scope_busy_cpu_s,
-               job_mem_MB, attributed_package_J, attributed_dram_J
-  PREFIX.json  metadata, cgroup info, attribution scope, totals, samples
-  PREFIX.md    summary table
+Outputs (for --out PREFIX): PREFIX.csv, PREFIX.json, PREFIX.md
 
 Examples:
   python3 rapl_cgroup_reader.py --duration 15 --out idle
   python3 rapl_cgroup_reader.py --out w3 -- python3 workloads/w3_two_cores.py --seconds 30
+  python3 rapl_cgroup_reader.py --e-byte 2.0e-10 --out m256 -- python3 workloads/memstream.py --mb 256
 """
 import argparse
 import csv
@@ -38,9 +36,11 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rapl_reader import discover_domains, read_all, delta_uj, cpu_model  # noqa: E402
+import perfcount  # noqa: E402
 
 CGROUP_ROOT = "/sys/fs/cgroup"
 CLK_TCK = os.sysconf("SC_CLK_TCK")
+CACHE_LINE = perfcount.CACHE_LINE
 
 
 def _read(path):
@@ -49,11 +49,8 @@ def _read(path):
 
 
 def find_job_cgroup():
-    """Return the job-level cgroup directory for this process.
-
-    Under Slurm the process sits in .../slurmstepd.scope/<job>/step_X/user/task_0;
-    we walk up to the <job> node so every step and task of the job is counted.
-    Outside Slurm, the process's own cgroup is used."""
+    """Job-level cgroup for this process. Under Slurm we walk up from
+    .../slurmstepd.scope/<job>/step_X/user/task_0 to the <job> node."""
     rel = _read("/proc/self/cgroup").split("::", 1)[-1]
     parts = [p for p in rel.split("/") if p]
     if "slurmstepd.scope" in parts:
@@ -79,7 +76,6 @@ def read_int(path, default=None):
 
 
 def read_kv(path):
-    """'key value' lines -> {key: int}. Missing file -> {}."""
     try:
         return {k: int(v) for k, v in (ln.split() for ln in _read(path).splitlines())}
     except (OSError, ValueError):
@@ -87,23 +83,20 @@ def read_kv(path):
 
 
 def read_pressure(path):
-    """PSI file -> {'some_total_us': .., 'full_total_us': ..} (missing -> {})."""
     out = {}
     try:
         for ln in _read(path).splitlines():
             parts = ln.split()
-            kind = parts[0]
             for kv in parts[1:]:
                 k, v = kv.split("=")
                 if k == "total":
-                    out[f"{kind}_total_us"] = int(v)
+                    out[f"{parts[0]}_total_us"] = int(v)
     except (OSError, ValueError):
         pass
     return out
 
 
 def read_numa_anon(cg):
-    """memory.numa_stat 'anon N0=.. N1=..' -> {'N0': bytes, ...}."""
     try:
         for ln in _read(os.path.join(cg, "memory.numa_stat")).splitlines():
             parts = ln.split()
@@ -123,6 +116,7 @@ def cgroup_stats_snapshot(cg):
 
 def cgroup_stats_delta(before, after, cg, T):
     ms0, ms1 = before["memory_stat"], after["memory_stat"]
+
     def pct(key):
         a, b = before[key].get("some_total_us"), after[key].get("some_total_us")
         return round(100 * (b - a) / (T * 1e6), 3) if a is not None and b is not None and T else None
@@ -149,9 +143,8 @@ def busy_jiffies(cpus=None):
             if cpus is None:
                 if f0[0] != "cpu":
                     continue
-            else:
-                if f0[0] == "cpu" or int(f0[0][3:]) not in cpus:
-                    continue
+            elif f0[0] == "cpu" or int(f0[0][3:]) not in cpus:
+                continue
             user, nice, system, idle, iowait, irq, softirq, steal = map(int, f0[1:9])
             total += user + nice + system + irq + softirq + steal
             if cpus is None:
@@ -173,7 +166,6 @@ def parse_cpulist(s):
 
 
 def cpu_socket_map():
-    """{cpu_id: physical_package_id} for every online CPU."""
     m = {}
     for p in glob.glob("/sys/devices/system/cpu/cpu[0-9]*/topology/physical_package_id"):
         cid = int(re.search(r"cpu(\d+)/", p).group(1))
@@ -203,7 +195,6 @@ def cgroup_info(cg):
 
 
 def domain_socket(name):
-    """'package-1' -> 1, 'package-1/dram' -> 1, else None."""
     m = re.match(r"package-(\d+)", name)
     return int(m.group(1)) if m else None
 
@@ -217,25 +208,21 @@ def is_package(name):
 
 
 def attribution_scope(domains, cg_info):
-    """Decide which sockets/CPUs/domains the job's energy is attributed against."""
     smap = cpu_socket_map()
     sockets = cg_info.get("sockets") or sorted(set(smap.values()))
     cpus = {c for c, s in smap.items() if s in sockets} or None
     pkg_idx = [i for i, d in enumerate(domains) if is_package(d["name"]) and domain_socket(d["name"]) in sockets]
     dram_idx = [i for i, d in enumerate(domains) if is_dram(d["name"]) and domain_socket(d["name"]) in sockets]
-    if not pkg_idx:  # names did not parse; fall back to everything
+    if not pkg_idx:
         pkg_idx = [i for i, d in enumerate(domains) if is_package(d["name"])]
         dram_idx = [i for i, d in enumerate(domains) if is_dram(d["name"])]
-    return {
-        "sockets": sockets,
-        "n_cpus_in_scope": len(cpus) if cpus else len(smap),
-        "package_domains": [domains[i]["name"] for i in pkg_idx],
-        "dram_domains": [domains[i]["name"] for i in dram_idx],
-        "_cpus": cpus, "_pkg_idx": pkg_idx, "_dram_idx": dram_idx,
-    }
+    return {"sockets": sockets, "n_cpus_in_scope": len(cpus) if cpus else len(smap),
+            "package_domains": [domains[i]["name"] for i in pkg_idx],
+            "dram_domains": [domains[i]["name"] for i in dram_idx],
+            "_cpus": cpus, "_pkg_idx": pkg_idx, "_dram_idx": dram_idx}
 
 
-def sample_loop(domains, cg, scope, interval, duration=None, proc=None):
+def sample_loop(domains, cg, scope, interval, duration=None, proc=None, pc=None, e_byte=None):
     cpus, pkg_idx, dram_idx = scope["_cpus"], scope["_pkg_idx"], scope["_dram_idx"]
     t0 = time.monotonic()
     prev_e = read_all(domains)
@@ -249,6 +236,8 @@ def sample_loop(domains, cg, scope, interval, duration=None, proc=None):
     numa_peak = {}
 
     def row(t):
+        c = pc.read() if (pc is not None and pc.ok) else {}
+        m = c.get("llc_misses")
         return {
             "t_s": t,
             "energy_J": [x / 1e6 for x in cum_uj],
@@ -258,6 +247,11 @@ def sample_loop(domains, cg, scope, interval, duration=None, proc=None):
             "job_mem_MB": read_int(os.path.join(cg, "memory.current"), 0) / 1e6,
             "attributed_package_J": attr_pkg,
             "attributed_dram_J": attr_dram,
+            "job_llc_misses": m,
+            "job_llc_load_misses": c.get("llc_load_misses"),
+            "job_llc_store_misses": c.get("llc_store_misses"),
+            "job_dram_GB_est": (m * CACHE_LINE / 1e9) if m is not None else None,
+            "mem_term_J": (m * CACHE_LINE * e_byte) if (m is not None and e_byte) else None,
         }
 
     samples = [row(0.0)]
@@ -295,7 +289,7 @@ def sample_loop(domains, cg, scope, interval, duration=None, proc=None):
     return samples, mem_peak, numa_peak
 
 
-def summarize(domains, samples, mem_peak, scope):
+def summarize(domains, samples, mem_peak, scope, e_byte=None, idle_dram_w=None):
     last = samples[-1]
     T = last["t_s"]
     per_domain = []
@@ -306,7 +300,13 @@ def summarize(domains, samples, mem_peak, scope):
     dram_J = sum(x["energy_J"] for x in per_domain if is_dram(x["name"]))
     scope_pkg_J = sum(last["energy_J"][i] for i in scope["_pkg_idx"])
     scope_dram_J = sum(last["energy_J"][i] for i in scope["_dram_idx"])
-    r = lambda v: round(v, 3) if v is not None else None
+    r = lambda v: round(v, 3) if v is not None else None  # noqa: E731
+    m = last["job_llc_misses"]
+    mem_term = last["mem_term_J"]
+    mem_cap = None
+    if mem_term is not None:
+        mem_cap = scope_dram_J - (idle_dram_w * T if idle_dram_w else 0.0)
+        mem_term = max(0.0, min(mem_term, mem_cap))
     return {
         "duration_s": T,
         "domains": per_domain,
@@ -326,6 +326,15 @@ def summarize(domains, samples, mem_peak, scope):
         "attributed_dram_J": r(last["attributed_dram_J"]),
         "attributed_package_avg_W": r(last["attributed_package_J"] / T) if T else None,
         "attributed_dram_avg_W": r(last["attributed_dram_J"] / T) if T else None,
+        "job_llc_misses": m,
+        "job_llc_load_misses": last["job_llc_load_misses"],
+        "job_llc_store_misses": last["job_llc_store_misses"],
+        "job_dram_GB_est": r(last["job_dram_GB_est"]) if m is not None else None,
+        "job_dram_GBps_est": r(last["job_dram_GB_est"] / T) if (m is not None and T) else None,
+        "e_byte_J": e_byte,
+        "mem_term_cap_J": r(mem_cap),
+        "attributed_mem_J": r(mem_term),
+        "attributed_mem_avg_W": r(mem_term / T) if (mem_term is not None and T) else None,
     }
 
 
@@ -337,7 +346,11 @@ def render_md(meta, cg, scope, tot, cgs=None):
         L.append(f"- command: `{' '.join(meta['command'])}` (exit {meta.get('exit_code')})")
     L.append(f"- cgroup: `{cg['path']}`  cpus: {cg.get('cpuset_cpus_effective', '?')} on socket(s) {scope['sockets']}")
     L.append(f"- attribution scope: {', '.join(scope['package_domains'])} ({scope['n_cpus_in_scope']} CPUs)")
-    L += ["", "**Job (from cgroup)**", "",
+    if meta.get("perf", {}).get("enabled"):
+        L.append(f"- perf counters: {', '.join(meta['perf']['events'])} (user mode, inherited by children)")
+    elif meta.get("command"):
+        L.append(f"- perf counters: unavailable ({meta.get('perf', {}).get('errors')})")
+    L += ["", "**Job (from cgroup and perf)**", "",
           "| metric | value |", "|---|---:|",
           f"| CPU time used (s) | {tot['job_cpu_s']:.2f} |",
           f"| avg cores busy | {tot['job_avg_cores_busy']:.2f} |",
@@ -345,13 +358,16 @@ def render_md(meta, cg, scope, tot, cgs=None):
           f"| peak memory (MB) | {tot['job_mem_peak_MB']:.1f} |"]
     if cgs:
         L += [f"| page faults (major) | {cgs['pgfault']} ({cgs['pgmajfault']}) |",
-              f"| peak anon memory by NUMA node (MB) | {cgs.get('numa_anon_MB_peak', cgs['numa_anon_MB_end'])} |",
-              f"| memory / cpu pressure, some (%) | {cgs['memory_pressure_some_pct']} / {cgs['cpu_pressure_some_pct']} |"]
-    L += [
-          f"| attributed package energy (J) | {tot['attributed_package_J']:.2f} |",
+              f"| peak anon memory by NUMA node (MB) | {cgs.get('numa_anon_MB_peak', cgs['numa_anon_MB_end'])} |"]
+    if tot.get("job_llc_misses") is not None:
+        L += [f"| LLC misses (perf) | {tot['job_llc_misses']:,} |",
+              f"| est. DRAM traffic (misses x 64 B) | {tot['job_dram_GB_est']:.2f} GB, {tot['job_dram_GBps_est']:.2f} GB/s |"]
+    L += [f"| attributed package energy (J) | {tot['attributed_package_J']:.2f} |",
           f"| attributed package power (W) | {tot['attributed_package_avg_W']:.2f} |",
-          f"| attributed DRAM energy (J) | {tot['attributed_dram_J']:.2f} |",
-          "", "**Node (from RAPL)**", "",
+          f"| attributed DRAM energy by CPU share (J) | {tot['attributed_dram_J']:.2f} |"]
+    if tot.get("attributed_mem_J") is not None:
+        L.append(f"| memory term (J) at {tot['e_byte_J'] * 1e9:.3f} nJ/byte | {tot['attributed_mem_J']:.2f} (cap {tot['mem_term_cap_J']:.2f}) |")
+    L += ["", "**Node (from RAPL)**", "",
           f"avg cores busy, all users: {tot['scope_avg_cores_busy']:.2f} on job socket(s), {tot['node_avg_cores_busy']:.2f} whole node", "",
           "| domain | energy (J) | avg power (W) |", "|---|---:|---:|"]
     for d in tot["domains"]:
@@ -367,6 +383,9 @@ def main():
     ap.add_argument("--out", default="rapl_cgroup")
     ap.add_argument("--label")
     ap.add_argument("--cgroup", help="cgroup directory to account (default: this job's)")
+    ap.add_argument("--no-perf", action="store_true", help="do not open perf cache-miss counters")
+    ap.add_argument("--e-byte", type=float, help="J per byte of DRAM traffic (from calibrate_memory.py); enables the memory term")
+    ap.add_argument("--idle-dram-w", type=float, help="idle DRAM power (W) of the job's socket(s); caps the memory term at energy above idle")
     ap.add_argument("command", nargs=argparse.REMAINDER)
     args = ap.parse_args()
 
@@ -386,11 +405,26 @@ def main():
     cg_info = cgroup_info(cg)
     scope = attribution_scope(domains, cg_info)
     snap0 = cgroup_stats_snapshot(cg)
-    proc = subprocess.Popen(cmd) if cmd else None
-    samples, mem_peak, numa_peak = sample_loop(domains, cg, scope, args.interval, None if cmd else args.duration, proc)
+
+    proc = pc = None
+    perf_info = {"enabled": False}
+    if cmd and args.no_perf:
+        proc = subprocess.Popen(cmd)
+    elif cmd:
+        proc = perfcount.start_stopped(cmd)
+        pc = perfcount.PerfCounters(proc.pid)
+        perf_info = {"enabled": pc.ok, "events": sorted(pc.fds), "errors": pc.errors}
+        if not pc.ok:
+            print(f"warning: perf counters unavailable: {pc.errors}", file=sys.stderr)
+        perfcount.cont(proc)
+
+    samples, mem_peak, numa_peak = sample_loop(domains, cg, scope, args.interval, None if cmd else args.duration,
+                                               proc, pc, args.e_byte)
     exit_code = proc.wait() if proc else None
+    if pc:
+        pc.close()
     snap1 = cgroup_stats_snapshot(cg)
-    tot = summarize(domains, samples, mem_peak, scope)
+    tot = summarize(domains, samples, mem_peak, scope, args.e_byte, args.idle_dram_w)
     cg_stats = cgroup_stats_delta(snap0, snap1, cg, tot["duration_s"])
     cg_stats["numa_anon_MB_peak"] = {k: round(v / 1e6, 1) for k, v in numa_peak.items()}
 
@@ -402,18 +436,19 @@ def main():
         "command": cmd or None, "exit_code": exit_code,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "slurm_cpus_per_task": os.environ.get("SLURM_CPUS_PER_TASK"),
+        "perf": perf_info,
     }
     scope_pub = {k: v for k, v in scope.items() if not k.startswith("_")}
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    extra = ["job_cpu_s", "scope_busy_cpu_s", "node_busy_cpu_s", "job_mem_MB", "attributed_package_J", "attributed_dram_J",
+             "job_llc_misses", "job_llc_load_misses", "job_llc_store_misses", "job_dram_GB_est", "mem_term_J"]
     with open(args.out + ".csv", "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["t_s"] + [f"{d['name']}_J" for d in domains] +
-                   ["job_cpu_s", "scope_busy_cpu_s", "node_busy_cpu_s", "job_mem_MB", "attributed_package_J", "attributed_dram_J"])
+        w.writerow(["t_s"] + [f"{d['name']}_J" for d in domains] + extra)
         for s in samples:
             w.writerow([f"{s['t_s']:.3f}"] + [f"{v:.6f}" for v in s["energy_J"]] +
-                       [f"{s['job_cpu_s']:.4f}", f"{s['scope_busy_cpu_s']:.4f}", f"{s['node_busy_cpu_s']:.4f}", f"{s['job_mem_MB']:.2f}",
-                        f"{s['attributed_package_J']:.6f}", f"{s['attributed_dram_J']:.6f}"])
+                       ["" if s[k] is None else (f"{s[k]:.6f}" if isinstance(s[k], float) else s[k]) for k in extra])
     with open(args.out + ".json", "w") as f:
         json.dump({"meta": meta, "cgroup": cg_info, "cgroup_stats": cg_stats, "attribution_scope": scope_pub,
                    "rapl_domains": domains, "totals": tot, "samples": samples}, f, indent=2)

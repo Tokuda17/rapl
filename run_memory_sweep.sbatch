@@ -9,7 +9,11 @@
 #
 # Memory access vs power. Part A: 8 streaming processes, working set per
 # process swept from cache-resident to DRAM-resident. Part B: DRAM-resident
-# working set, process count swept. RAPL + cgroup recorded for each.
+# working set, process count swept. RAPL, cgroup and perf LLC misses recorded
+# for each, plus a cache-resident CPU-only control run.
+# For calibration of the memory term run it on a whole node:
+#     sbatch --exclusive run_memory_sweep.sbatch
+# then:  python3 calibrate_memory.py results/mem_<jobid>_<node>
 # Results: results/mem_<jobid>_<node>/.
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}"
@@ -32,6 +36,9 @@ python3 rapl_reader.py --list | tee "$OUT/domains.txt"
 echo
 
 python3 rapl_cgroup_reader.py --interval "$INTERVAL" --duration "$IDLE_S" --out "$OUT/w0_idle" --label "w0_idle: idle baseline (${IDLE_S}s)"
+echo; echo "================ cpu-only control: ${PROCS} procs numpy matmul (cache resident)"
+python3 rapl_cgroup_reader.py --interval "$INTERVAL" --out "$OUT/cpu${PROCS}" --label "cpu${PROCS}: ${PROCS} procs matmul, cache-resident (${LOAD_S}s)" \
+    -- python3 workloads/ncores.py --procs "$PROCS" --seconds "$LOAD_S"
 for mb in $SIZES_MB; do
   echo; echo "================ working set ${mb} MB x ${PROCS} procs"
   python3 rapl_cgroup_reader.py --interval "$INTERVAL" --out "$OUT/m${mb}" --label "m${mb}: ${PROCS} procs x ${mb} MB (${LOAD_S}s)" \
@@ -50,6 +57,7 @@ done
   echo
   echo '```'; cat "$OUT/lscpu.txt"; echo '```'
   cat "$OUT/w0_idle.md"
+  echo; cat "$OUT/cpu${PROCS}.md"
   for mb in $SIZES_MB; do echo; cat "$OUT/m${mb}.md"; done
   for n in $PROC_COUNTS; do echo; cat "$OUT/p${n}.md"; done
 } > "$OUT/summary.md"

@@ -11,6 +11,11 @@ and record them for a Slurm job on Georgia Tech's ICE cluster.
 - `workload.py` - small CPU-bound workload so there is something to measure.
 - `run_rapl.sbatch` - Slurm script: idle baseline, then the workload, both
   measured. Results go to `results/job_<jobid>_<node>/`.
+- `perfcount.py` - counts the job's last-level-cache misses with `perf_event_open`
+  (no perf binary needed), inherited across all child processes.
+- `calibrate_memory.py` - fits joules per byte of DRAM traffic from a memory
+  sweep run on an exclusive node; the reader's `--e-byte` flag then turns a
+  job's cache misses into a memory energy term.
 - `results/` - collected data from real ICE runs.
 
 ## Usage on ICE
@@ -40,6 +45,20 @@ python3 rapl_reader.py --interval 0.5 --out run -- ./my_prog   # measure a comma
   `--exclusive`, so other users' jobs on the same node contribute to the numbers.
 - Reading `energy_uj` needs read permission on the sysfs files. On ICE (RHEL 9,
   kernel 5.14) they are world-readable. On many desktop kernels they are root-only.
+
+## Memory term (in progress)
+
+CPU time cannot see memory traffic, so the reader now also counts the job's
+LLC misses through perf and estimates DRAM traffic as misses x 64 bytes. The
+memory term is `traffic x e_byte`, with `e_byte` calibrated once per node type:
+
+```bash
+sbatch --exclusive run_memory_sweep.sbatch          # whole node, so DRAM energy above idle is all ours
+python3 calibrate_memory.py results/mem_<jobid>_<node>   # fits e_byte, writes calibration.json/.png
+python3 rapl_cgroup_reader.py --e-byte <value> --idle-dram-w <idle W> --out run -- ./my_prog
+```
+
+Calibration results will be added here once the exclusive run has been done.
 
 ## Collected data: job 6673551 (2026-10-30)
 
