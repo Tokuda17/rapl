@@ -66,8 +66,11 @@ def main(d):
     B = sorted((r for r in rows if r["kind"] == "p"), key=lambda r: r["val"])
     if not A:
         sys.exit(f"no m*.json in {d}")
-    js = A[0]["sockets"][0] if A[0]["sockets"] else 0
-    ctl = next((s for s in A[0]["pkg"] if s != js), None)
+    job_socks = A[0]["sockets"] or [0]
+    js = job_socks[0]
+    others = [s for s in sorted(A[0]["pkg"]) if s != js]
+    ctl = others[0] if others else None          # second series: control socket, or the job's other socket
+    ctl_tag = "control" if (ctl is not None and ctl not in job_socks) else "job's socket too"
     mk = dict(lw=2, marker="o", ms=7, mec=SURFACE, mew=1.5)
 
     fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(14, 4.8), facecolor=SURFACE)
@@ -80,7 +83,7 @@ def main(d):
     # Panel 1: DRAM power vs working set
     a1.plot(xa, [r["dram"][js] for r in A], color=ORANGE, label=f"DRAM-{js} (job's socket)", **mk)
     if ctl is not None:
-        a1.plot(xa, [r["dram"][ctl] for r in A], color=AQUA, label=f"DRAM-{ctl} (control)", **mk)
+        a1.plot(xa, [r["dram"][ctl] for r in A], color=AQUA, label=f"DRAM-{ctl} ({ctl_tag})", **mk)
     if idle:
         a1.axhline(idle["dram"][js], color=INK2, lw=1, ls=(0, (4, 3)))
         a1.annotate(f"idle {idle['dram'][js]:.1f} W", (xa[-1], idle["dram"][js]), xytext=(0, 5),
@@ -95,7 +98,7 @@ def main(d):
     # Panel 2: package power vs working set (CPU usage constant)
     a2.plot(xa, [r["pkg"][js] for r in A], color=BLUE, label=f"package-{js} (job's socket)", **mk)
     if ctl is not None:
-        a2.plot(xa, [r["pkg"][ctl] for r in A], color=AQUA, label=f"package-{ctl} (control)", **mk)
+        a2.plot(xa, [r["pkg"][ctl] for r in A], color=AQUA, label=f"package-{ctl} ({ctl_tag})", **mk)
     if idle:
         a2.axhline(idle["pkg"][js], color=INK2, lw=1, ls=(0, (4, 3)))
         a2.annotate(f"idle {idle['pkg'][js]:.0f} W", (xa[-1], idle["pkg"][js]), xytext=(0, 5),
@@ -116,7 +119,7 @@ def main(d):
         xb = [r["cores"] for r in B]
         a3.plot(xb, [r["dram"][js] for r in B], color=ORANGE, label=f"DRAM-{js} (job's socket)", **mk)
         if ctl is not None:
-            a3.plot(xb, [r["dram"][ctl] for r in B], color=AQUA, label=f"DRAM-{ctl} (control)", **mk)
+            a3.plot(xb, [r["dram"][ctl] for r in B], color=AQUA, label=f"DRAM-{ctl} ({ctl_tag})", **mk)
         for r in B:
             a3.annotate(f"p{r['val']}", (r["cores"], r["dram"][js]), xytext=(0, 9), textcoords="offset points",
                         ha="center", fontsize=8.5, color=INK2)
@@ -133,7 +136,8 @@ def main(d):
 
     meta = A[-1]["meta"]
     fig.suptitle("Memory access vs power on an ICE node", x=0.06, ha="left", fontsize=14, color=INK, fontweight="bold")
-    fig.text(0.06, 0.895, f"{meta['hostname'].split('.')[0]}, {meta['cpu']}, Slurm job {meta['slurm_job_id']}, job CPUs on socket {js}, "
+    socks_txt = ", ".join(str(s) for s in job_socks)
+    fig.text(0.06, 0.895, f"{meta['hostname'].split('.')[0]}, {meta['cpu']}, Slurm job {meta['slurm_job_id']}, job CPUs on socket(s) {socks_txt}, "
              f"{A[0]['meta']['interval_s']:g}s samples.", fontsize=9, color=INK2)
     fig.text(0.06, 0.855, f"Left and middle hold CPU usage at about {n_procs} cores; only the data's distance from the cores changes.",
              fontsize=9, color=INK2)

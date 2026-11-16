@@ -58,14 +58,24 @@ def main(d):
     json.dump(out, open(os.path.join(d, "calibration.json"), "w"), indent=2)
 
     fig, ax = plt.subplots(figsize=(6.5, 4.6), facecolor=SURFACE)
-    fig.subplots_adjust(top=0.8, bottom=0.15, left=0.13, right=0.97)
+    fig.subplots_adjust(top=0.78, bottom=0.15, left=0.13, right=0.97)
     ax.set_facecolor(SURFACE)
     xs = [r["GB"] for r in rows]
     ax.plot([0, max(xs) * 1.05], [0, e_byte * max(xs) * 1.05 * 1e9], color=INK2, lw=1, ls=(0, (4, 3)),
             label=f"fit: {e_byte * 1e9:.3f} nJ/byte ({e_byte * CACHE_LINE * 1e9:.1f} nJ per 64 B line)")
     ax.scatter(xs, [r["dram_above_idle_J"] for r in rows], s=55, color=BLUE, edgecolor=SURFACE, linewidth=1.5, zorder=3)
-    for r in rows:
-        ax.annotate(r["label"], (r["GB"], r["dram_above_idle_J"]), xytext=(6, 4), textcoords="offset points", fontsize=8.5, color=INK2)
+    # direct labels; points closer than 4% of the x range share a stacked label block
+    span = max(xs) or 1.0
+    groups = []
+    for r in sorted(rows, key=lambda r: r["GB"]):
+        if groups and r["GB"] - groups[-1][-1]["GB"] < 0.04 * span:
+            groups[-1].append(r)
+        else:
+            groups.append([r])
+    for g in groups:
+        for k, r in enumerate(sorted(g, key=lambda r: -r["dram_above_idle_J"])):
+            ax.annotate(r["label"], (g[0]["GB"], max(x["dram_above_idle_J"] for x in g)), xytext=(8, -2 - 11 * k),
+                        textcoords="offset points", fontsize=8.5, color=INK2, va="top")
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
     for s in ("left", "bottom"):
@@ -75,12 +85,12 @@ def main(d):
     ax.tick_params(colors=INK2, labelsize=9, length=0)
     ax.set_xlabel("DRAM traffic from LLC misses x 64 B (GB)", color=INK2, fontsize=9)
     ax.set_ylabel("DRAM energy above idle (J)", color=INK2, fontsize=9)
-    ax.set_xlim(left=0)
+    ax.set_xlim(left=0, right=max(xs) * 1.18)
     ax.set_ylim(bottom=min(0, min(r["dram_above_idle_J"] for r in rows) * 1.1))
     ax.legend(frameon=False, fontsize=8.5, loc="upper left", labelcolor=INK2)
     fig.suptitle("DRAM energy per byte (calibration)", x=0.13, ha="left", fontsize=13, color=INK, fontweight="bold")
-    fig.text(0.13, 0.86, f"{meta['hostname'].split('.')[0]}, {meta['cpu']}, job {meta['slurm_job_id']}, exclusive node, idle DRAM {idle_w:.1f} W",
-             fontsize=9, color=INK2)
+    fig.text(0.13, 0.885, f"{meta['hostname'].split('.')[0]}, {meta['cpu']}, job {meta['slurm_job_id']}", fontsize=9, color=INK2)
+    fig.text(0.13, 0.85, f"exclusive node, idle DRAM {idle_w:.1f} W subtracted, 30 s runs", fontsize=9, color=INK2)
     fig.savefig(os.path.join(d, "calibration.png"), dpi=180, facecolor=SURFACE)
 
     md = ["| run | job cores busy | DRAM traffic (GB) | GB/s | DRAM energy above idle (J) | nJ per 64 B line |",

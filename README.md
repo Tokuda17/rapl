@@ -46,7 +46,7 @@ python3 rapl_reader.py --interval 0.5 --out run -- ./my_prog   # measure a comma
 - Reading `energy_uj` needs read permission on the sysfs files. On ICE (RHEL 9,
   kernel 5.14) they are world-readable. On many desktop kernels they are root-only.
 
-## Memory term (in progress)
+## Memory term
 
 CPU time cannot see memory traffic, so the reader now also counts the job's
 LLC misses through perf and estimates DRAM traffic as misses x 64 bytes. The
@@ -58,7 +58,65 @@ python3 calibrate_memory.py results/mem_<jobid>_<node>   # fits e_byte, writes c
 python3 rapl_cgroup_reader.py --e-byte <value> --idle-dram-w <idle W> --out run -- ./my_prog
 ```
 
-Calibration results will be added here once the exclusive run has been done.
+### Calibration: job 7123550 (2026-11-16), exclusive node
+
+Run on `atl1-1-03-007-25-2` (2x Intel Xeon Gold 6226, whole node, so the job's
+cpuset spanned both sockets and all DRAM energy above idle is the job's). The
+perf counters opened for an unprivileged user and were inherited by every
+worker process; the 1 MB run shows the counting is clean (0.16 GB of traffic in
+30 s) and the streaming runs reach about 80 GB/s on the node. Full data in
+[`results/mem_7123550_atl1-1-03-007-25-2/`](results/mem_7123550_atl1-1-03-007-25-2/).
+
+![DRAM energy per byte](./results/mem_7123550_atl1-1-03-007-25-2/calibration.png)
+
+Fit over the runs with more than 1 GB of traffic: **0.195 nJ per byte**,
+12.5 nJ per 64-byte cache line, rmse 25 J on runs of 100 to 480 J.
+That sits inside the range published for DDR4 access energy. Applying it back
+to the same runs:
+
+| run | job cores busy | DRAM traffic (GB) | GB/s | measured DRAM J above idle | memory term (J) | error |
+|---|---:|---:|---:|---:|---:|---:|
+| m1 | 7.74 | 0.2 | 0.0 | -1.5 | 0.0 |  |
+| m4 | 7.73 | 221.2 | 7.1 | 72.0 | 43.0 | -40% |
+| cpu8 | 7.74 | 701.6 | 22.6 | 173.9 | 136.5 | -22% |
+| p1 | 0.98 | 388.9 | 12.5 | 96.2 | 75.7 | -21% |
+| p2 | 1.95 | 788.4 | 25.4 | 189.7 | 153.4 | -19% |
+| p4 | 3.90 | 1343.8 | 43.3 | 297.7 | 261.5 | -12% |
+| m16 | 7.71 | 2169.1 | 70.0 | 437.4 | 422.1 | -4% |
+| m64 | 7.74 | 2481.8 | 80.1 | 470.9 | 482.9 | +3% |
+| m1024 | 7.81 | 2536.4 | 81.8 | 478.2 | 493.5 | +3% |
+
+Reading the data:
+
+- The term is within about 5% for memory-bound runs. At low traffic it
+  underestimates by 20 to 30%, because DRAM has its own power states and a
+  lightly used channel costs more per byte than a saturated one. A second
+  calibration constant for the low-traffic regime would fix most of that.
+- The matmul control (`cpu8`) was not cache-resident on this node: 8 processes
+  x 14 MB of matrices exceed the 2 x 19.25 MB of L3, so it streamed 22.6 GB/s
+  and the term correctly charged it 136 J. The same run on the 48-core Xeon
+  6740P node earlier stayed in cache.
+- The constant is per node type. ICE's other CPU models need their own
+  exclusive run; the batch script and fit are the same.
+
+The memory sweep from the same job, now with both sockets in the job:
+
+![Memory access vs power, exclusive node](./results/mem_7123550_atl1-1-03-007-25-2/memory_vs_power.png)
+
+**Using it.** On the Gold 6226 nodes the per-job estimate is now
+
+```
+E_job = (job CPU share on its sockets) x package energy
+      + (LLC misses x 64 B) x 1.946e-10 J/B        capped at DRAM energy above idle
+```
+
+```bash
+python3 rapl_cgroup_reader.py --e-byte 1.9458e-10 --idle-dram-w 4.3 --out run -- ./my_prog
+```
+
+The memory term does not depend on who else is on the socket, unlike the CPU
+share. The earlier shared-node sweeps predate the perf counters, so they have
+no memory term; every run from here on records one.
 
 ## Collected data: job 6673551 (2026-10-30)
 

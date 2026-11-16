@@ -1,0 +1,818 @@
+{
+  "meta": {
+    "label": "p8: 8 procs x 1024 MB (30s)",
+    "hostname": "atl1-1-03-007-25-2.pace.gatech.edu",
+    "cpu": "Intel(R) Xeon(R) Gold 6226 CPU @ 2.70GHz",
+    "kernel": "5.14.0-687.64.1.el9_8.x86_64",
+    "timestamp_utc": "2026-11-16T23:16:24Z",
+    "interval_s": 1.0,
+    "n_samples": 33,
+    "command": [
+      "python3",
+      "workloads/memstream.py",
+      "--procs",
+      "8",
+      "--mb",
+      "1024",
+      "--seconds",
+      "30"
+    ],
+    "exit_code": 0,
+    "slurm_job_id": "7123550",
+    "slurm_cpus_per_task": "8",
+    "perf": {
+      "enabled": true,
+      "events": [
+        "llc_load_misses",
+        "llc_misses",
+        "llc_store_misses"
+      ],
+      "errors": {}
+    }
+  },
+  "cgroup": {
+    "path": "/sys/fs/cgroup/system.slice/slurmstepd.scope/s8FXM7KA0P7S00",
+    "cpuset_cpus_effective": "0-23",
+    "n_cpus": 24,
+    "sockets": [
+      0,
+      1
+    ],
+    "memory_max_bytes": 25769803776,
+    "cpu_max": "max 100000"
+  },
+  "cgroup_stats": {
+    "pgfault": 57129,
+    "pgmajfault": 0,
+    "anon_MB_end": 8.4,
+    "file_MB_end": 0.5,
+    "numa_anon_MB_end": {
+      "N0": 8.0,
+      "N1": 0.5
+    },
+    "memory_pressure_some_pct": null,
+    "cpu_pressure_some_pct": null,
+    "io_pressure_some_pct": null,
+    "numa_anon_MB_peak": {
+      "N0": 4174.1,
+      "N1": 4156.8
+    }
+  },
+  "attribution_scope": {
+    "sockets": [
+      0,
+      1
+    ],
+    "n_cpus_in_scope": 24,
+    "package_domains": [
+      "package-0",
+      "package-1"
+    ],
+    "dram_domains": [
+      "package-0/dram",
+      "package-1/dram"
+    ]
+  },
+  "rapl_domains": [
+    {
+      "id": "intel-rapl:0",
+      "path": "/sys/class/powercap/intel-rapl:0/energy_uj",
+      "name": "package-0",
+      "max_uj": 262143328850
+    },
+    {
+      "id": "intel-rapl:0:0",
+      "path": "/sys/class/powercap/intel-rapl:0:0/energy_uj",
+      "name": "package-0/dram",
+      "max_uj": 65712999613
+    },
+    {
+      "id": "intel-rapl:1",
+      "path": "/sys/class/powercap/intel-rapl:1/energy_uj",
+      "name": "package-1",
+      "max_uj": 262143328850
+    },
+    {
+      "id": "intel-rapl:1:0",
+      "path": "/sys/class/powercap/intel-rapl:1:0/energy_uj",
+      "name": "package-1/dram",
+      "max_uj": 65712999613
+    }
+  ],
+  "totals": {
+    "duration_s": 31.001747807022184,
+    "domains": [
+      {
+        "name": "package-0",
+        "energy_J": 2229.922819,
+        "avg_power_W": 71.929
+      },
+      {
+        "name": "package-0/dram",
+        "energy_J": 327.903664,
+        "avg_power_W": 10.577
+      },
+      {
+        "name": "package-1",
+        "energy_J": 2242.88525,
+        "avg_power_W": 72.347
+      },
+      {
+        "name": "package-1/dram",
+        "energy_J": 283.260497,
+        "avg_power_W": 9.137
+      }
+    ],
+    "node_package_J": 4472.808,
+    "node_dram_J": 611.164,
+    "node_package_avg_W": 144.276,
+    "node_dram_avg_W": 19.714,
+    "scope_package_J": 4472.808,
+    "scope_dram_J": 611.164,
+    "scope_package_avg_W": 144.276,
+    "scope_dram_avg_W": 19.714,
+    "job_cpu_s": 242.21,
+    "job_avg_cores_busy": 7.813,
+    "scope_busy_cpu_s": 257.72,
+    "scope_avg_cores_busy": 8.313,
+    "node_busy_cpu_s": 257.78,
+    "node_avg_cores_busy": 8.315,
+    "job_share_of_scope_cpu": 0.9398,
+    "job_mem_peak_MB": 8353.8,
+    "attributed_package_J": 4212.447,
+    "attributed_dram_J": 575.808,
+    "attributed_package_avg_W": 135.878,
+    "attributed_dram_avg_W": 18.573,
+    "job_llc_misses": 39671840212,
+    "job_llc_load_misses": 11382182886,
+    "job_llc_store_misses": 7071015688,
+    "job_dram_GB_est": 2538.998,
+    "job_dram_GBps_est": 81.899,
+    "e_byte_J": null,
+    "mem_term_cap_J": null,
+    "attributed_mem_J": null,
+    "attributed_mem_avg_W": null
+  },
+  "samples": [
+    {
+      "t_s": 0.0,
+      "energy_J": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "job_cpu_s": 0.0,
+      "scope_busy_cpu_s": 0.0,
+      "node_busy_cpu_s": 0.0,
+      "job_mem_MB": 12.095488,
+      "attributed_package_J": 0.0,
+      "attributed_dram_J": 0.0,
+      "job_llc_misses": 346,
+      "job_llc_load_misses": 4,
+      "job_llc_store_misses": 18,
+      "job_dram_GB_est": 2.2144e-05,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 1.0010333170648664,
+      "energy_J": [
+        67.95411,
+        9.08208,
+        69.411993,
+        7.540957
+      ],
+      "job_cpu_s": 7.646544,
+      "scope_busy_cpu_s": 8.48,
+      "node_busy_cpu_s": 8.51,
+      "job_mem_MB": 8353.366016,
+      "attributed_package_J": 123.8650885257113,
+      "attributed_dram_J": 14.989243376666035,
+      "job_llc_misses": 835679560,
+      "job_llc_load_misses": 231767692,
+      "job_llc_store_misses": 160110115,
+      "job_dram_GB_est": 53.48349184,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 2.0010292471852154,
+      "energy_J": [
+        139.195383,
+        19.859523,
+        141.799137,
+        16.882479
+      ],
+      "job_cpu_s": 15.614172,
+      "scope_busy_cpu_s": 17.310000000000002,
+      "node_busy_cpu_s": 17.32,
+      "job_mem_MB": 8353.366016,
+      "attributed_package_J": 253.46619802569728,
+      "attributed_dram_J": 33.14331233080193,
+      "job_llc_misses": 2155553536,
+      "job_llc_load_misses": 610752489,
+      "job_llc_store_misses": 395029875,
+      "job_dram_GB_est": 137.955426304,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 3.001043156022206,
+      "energy_J": [
+        210.523569,
+        30.605952,
+        215.206969,
+        26.197991
+      ],
+      "job_cpu_s": 23.581274,
+      "scope_busy_cpu_s": 26.090000000000003,
+      "node_busy_cpu_s": 26.15,
+      "job_mem_MB": 8352.722944,
+      "attributed_package_J": 384.8018037751091,
+      "attributed_dram_J": 51.34781463888645,
+      "job_llc_misses": 3473898776,
+      "job_llc_load_misses": 989165456,
+      "job_llc_store_misses": 629661679,
+      "job_dram_GB_est": 222.329521664,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 4.001037521986291,
+      "energy_J": [
+        281.885325,
+        41.296093,
+        288.842156,
+        35.562662
+      ],
+      "job_cpu_s": 31.548815,
+      "scope_busy_cpu_s": 34.910000000000004,
+      "node_busy_cpu_s": 34.95,
+      "job_mem_MB": 8352.718848,
+      "attributed_package_J": 515.7846935967829,
+      "attributed_dram_J": 69.4643154163572,
+      "job_llc_misses": 4793849911,
+      "job_llc_load_misses": 1368184471,
+      "job_llc_store_misses": 864519145,
+      "job_dram_GB_est": 306.806394304,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 5.001049931161106,
+      "energy_J": [
+        353.312266,
+        51.986876,
+        362.575366,
+        44.926323
+      ],
+      "job_cpu_s": 39.516266,
+      "scope_busy_cpu_s": 43.730000000000004,
+      "node_busy_cpu_s": 43.760000000000005,
+      "job_mem_MB": 8352.567296,
+      "attributed_package_J": 646.9135360282003,
+      "attributed_dram_J": 87.5802791240946,
+      "job_llc_misses": 6110650051,
+      "job_llc_load_misses": 1746131812,
+      "job_llc_store_misses": 1098707890,
+      "job_dram_GB_est": 391.081603264,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 6.001035528024659,
+      "energy_J": [
+        425.187143,
+        62.711518,
+        436.519696,
+        54.295079
+      ],
+      "job_cpu_s": 47.482697,
+      "scope_busy_cpu_s": 52.580000000000005,
+      "node_busy_cpu_s": 52.60000000000001,
+      "job_mem_MB": 8352.52224,
+      "attributed_package_J": 778.1744005525186,
+      "attributed_dram_J": 105.66758632438139,
+      "job_llc_misses": 7429530127,
+      "job_llc_load_misses": 2124603227,
+      "job_llc_store_misses": 1333508567,
+      "job_dram_GB_est": 475.489928128,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 7.001033506123349,
+      "energy_J": [
+        497.422615,
+        73.479918,
+        510.40238,
+        63.62661
+      ],
+      "job_cpu_s": 55.449408000000005,
+      "scope_busy_cpu_s": 61.42,
+      "node_busy_cpu_s": 61.400000000000006,
+      "job_mem_MB": 8352.52224,
+      "attributed_package_J": 909.8577852476449,
+      "attributed_dram_J": 123.78187833761001,
+      "job_llc_misses": 8749815338,
+      "job_llc_load_misses": 2503761358,
+      "job_llc_store_misses": 1568436794,
+      "job_dram_GB_est": 559.988181632,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 8.001035547116771,
+      "energy_J": [
+        569.833196,
+        84.253765,
+        584.51126,
+        72.979516
+      ],
+      "job_cpu_s": 63.416009,
+      "scope_busy_cpu_s": 70.22,
+      "node_busy_cpu_s": 70.23,
+      "job_mem_MB": 8352.52224,
+      "attributed_package_J": 1042.5012039433336,
+      "attributed_dram_J": 142.00253863040012,
+      "job_llc_misses": 10068455128,
+      "job_llc_load_misses": 2882365212,
+      "job_llc_store_misses": 1803018578,
+      "job_dram_GB_est": 644.381128192,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 9.001033305190504,
+      "energy_J": [
+        642.540652,
+        95.054831,
+        658.567589,
+        82.339826
+      ],
+      "job_cpu_s": 71.38306800000001,
+      "scope_busy_cpu_s": 79.05,
+      "node_busy_cpu_s": 79.04,
+      "job_mem_MB": 8352.52224,
+      "attributed_package_J": 1174.9220118887827,
+      "attributed_dram_J": 160.19357737481508,
+      "job_llc_misses": 11387783116,
+      "job_llc_load_misses": 3261133567,
+      "job_llc_store_misses": 2037720660,
+      "job_dram_GB_est": 728.818119424,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 10.001033692155033,
+      "energy_J": [
+        716.023069,
+        105.828111,
+        733.079972,
+        91.679038
+      ],
+      "job_cpu_s": 79.349299,
+      "scope_busy_cpu_s": 88.35,
+      "node_busy_cpu_s": 88.37,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 1301.6919864692989,
+      "attributed_dram_J": 177.42161578961637,
+      "job_llc_misses": 12705208021,
+      "job_llc_load_misses": 3639455251,
+      "job_llc_store_misses": 2272199119,
+      "job_dram_GB_est": 813.133313344,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 11.001039133174345,
+      "energy_J": [
+        788.629756,
+        116.57627,
+        807.101999,
+        101.041919
+      ],
+      "job_cpu_s": 87.315723,
+      "scope_busy_cpu_s": 97.16,
+      "node_busy_cpu_s": 97.17,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 1434.2806932001429,
+      "attributed_dram_J": 195.6069814787151,
+      "job_llc_misses": 14023004109,
+      "job_llc_load_misses": 4017775743,
+      "job_llc_store_misses": 2506855993,
+      "job_dram_GB_est": 897.472262976,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 12.001033753156662,
+      "energy_J": [
+        861.060295,
+        127.330884,
+        880.984378,
+        110.353667
+      ],
+      "job_cpu_s": 95.283444,
+      "scope_busy_cpu_s": 106.02,
+      "node_busy_cpu_s": 105.99000000000001,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 1565.858628789294,
+      "attributed_dram_J": 213.65248643368147,
+      "job_llc_misses": 15339697833,
+      "job_llc_load_misses": 4395546994,
+      "job_llc_store_misses": 2741112889,
+      "job_dram_GB_est": 981.740661312,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 13.000897478079423,
+      "energy_J": [
+        934.011647,
+        138.120796,
+        954.355406,
+        119.689054
+      ],
+      "job_cpu_s": 103.248459,
+      "scope_busy_cpu_s": 114.85,
+      "node_busy_cpu_s": 114.81,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 1697.8472982723858,
+      "attributed_dram_J": 231.80631524619395,
+      "job_llc_misses": 16656684585,
+      "job_llc_load_misses": 4773535080,
+      "job_llc_store_misses": 2975389544,
+      "job_dram_GB_est": 1066.02781344,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 14.001047946047038,
+      "energy_J": [
+        1007.36351,
+        148.880628,
+        1027.67785,
+        129.068918
+      ],
+      "job_cpu_s": 111.211938,
+      "scope_busy_cpu_s": 123.67999999999999,
+      "node_busy_cpu_s": 123.63,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 1830.127905705461,
+      "attributed_dram_J": 249.96962738236428,
+      "job_llc_misses": 17974964094,
+      "job_llc_load_misses": 5151858820,
+      "job_llc_store_misses": 3210137330,
+      "job_dram_GB_est": 1150.397702016,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 15.000894217053428,
+      "energy_J": [
+        1080.195721,
+        159.595111,
+        1101.464344,
+        138.39029
+      ],
+      "job_cpu_s": 119.175461,
+      "scope_busy_cpu_s": 132.47,
+      "node_busy_cpu_s": 132.47,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 1962.960832838307,
+      "attributed_dram_J": 268.12161738431706,
+      "job_llc_misses": 19292135999,
+      "job_llc_load_misses": 5529942605,
+      "job_llc_store_misses": 3444563839,
+      "job_dram_GB_est": 1234.696703936,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 16.00104996515438,
+      "energy_J": [
+        1153.052895,
+        170.348793,
+        1173.405505,
+        147.678889
+      ],
+      "job_cpu_s": 127.139563,
+      "scope_busy_cpu_s": 140.63,
+      "node_busy_cpu_s": 140.6,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 2104.282978594455,
+      "attributed_dram_J": 287.6827411829276,
+      "job_llc_misses": 20613927970,
+      "job_llc_load_misses": 5909620891,
+      "job_llc_store_misses": 3679852428,
+      "job_dram_GB_est": 1319.29139008,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 17.001042755087838,
+      "energy_J": [
+        1225.639196,
+        181.058777,
+        1245.121141,
+        156.956396
+      ],
+      "job_cpu_s": 135.106423,
+      "scope_busy_cpu_s": 148.66,
+      "node_busy_cpu_s": 148.62,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 2247.450267487085,
+      "attributed_dram_J": 307.51307026739335,
+      "job_llc_misses": 21935262266,
+      "job_llc_load_misses": 6289189368,
+      "job_llc_store_misses": 3915004933,
+      "job_dram_GB_est": 1403.856785024,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 18.001036119181663,
+      "energy_J": [
+        1298.162814,
+        191.772434,
+        1316.976426,
+        166.222535
+      ],
+      "job_cpu_s": 143.073913,
+      "scope_busy_cpu_s": 156.65,
+      "node_busy_cpu_s": 156.64000000000001,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 2391.422415905542,
+      "attributed_dram_J": 327.4365777557588,
+      "job_llc_misses": 23255664939,
+      "job_llc_load_misses": 6668809031,
+      "job_llc_store_misses": 4149549863,
+      "job_dram_GB_est": 1488.362556096,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 19.00103493104689,
+      "energy_J": [
+        1370.709686,
+        202.460968,
+        1389.001449,
+        175.538521
+      ],
+      "job_cpu_s": 151.04028,
+      "scope_busy_cpu_s": 164.74,
+      "node_busy_cpu_s": 164.71,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 2533.784934256032,
+      "attributed_dram_J": 347.1353846752693,
+      "job_llc_misses": 24575070486,
+      "job_llc_load_misses": 7047724670,
+      "job_llc_store_misses": 4384259810,
+      "job_dram_GB_est": 1572.804511104,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 20.001039530150592,
+      "energy_J": [
+        1443.253507,
+        213.206862,
+        1461.177839,
+        184.858792
+      ],
+      "job_cpu_s": 159.007671,
+      "scope_busy_cpu_s": 172.75,
+      "node_busy_cpu_s": 172.72,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 2677.735309616769,
+      "attributed_dram_J": 367.09480819905394,
+      "job_llc_misses": 25896894184,
+      "job_llc_load_misses": 7427230304,
+      "job_llc_store_misses": 4619624389,
+      "job_dram_GB_est": 1657.401227776,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 21.001030474202707,
+      "energy_J": [
+        1515.693873,
+        223.986905,
+        1533.218976,
+        194.153603
+      ],
+      "job_cpu_s": 166.974875,
+      "scope_busy_cpu_s": 180.79,
+      "node_busy_cpu_s": 180.73,
+      "job_mem_MB": 8352.27648,
+      "attributed_package_J": 2820.9086440231886,
+      "attributed_dram_J": 386.9878998766928,
+      "job_llc_misses": 27215796836,
+      "job_llc_load_misses": 7805780224,
+      "job_llc_store_misses": 4854344690,
+      "job_dram_GB_est": 1741.810997504,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 22.001039845170453,
+      "energy_J": [
+        1588.409019,
+        234.799002,
+        1605.368083,
+        203.500694
+      ],
+      "job_cpu_s": 174.942141,
+      "scope_busy_cpu_s": 188.79,
+      "node_busy_cpu_s": 188.75,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 2965.180148715976,
+      "attributed_dram_J": 407.0646015191938,
+      "job_llc_misses": 28537421865,
+      "job_llc_load_misses": 8185298806,
+      "job_llc_store_misses": 5089613413,
+      "job_dram_GB_est": 1826.39499936,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 23.001031132182106,
+      "energy_J": [
+        1661.130024,
+        245.586451,
+        1677.537576,
+        212.882731
+      ],
+      "job_cpu_s": 182.909686,
+      "scope_busy_cpu_s": 196.76999999999998,
+      "node_busy_cpu_s": 196.76,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 3109.844504967531,
+      "attributed_dram_J": 427.2026074505058,
+      "job_llc_misses": 29857405743,
+      "job_llc_load_misses": 8564424379,
+      "job_llc_store_misses": 5324544742,
+      "job_dram_GB_est": 1910.873967552,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 24.001047061989084,
+      "energy_J": [
+        1733.645891,
+        256.344875,
+        1749.556618,
+        222.233632
+      ],
+      "job_cpu_s": 190.876934,
+      "scope_busy_cpu_s": 204.82999999999998,
+      "node_busy_cpu_s": 204.76999999999998,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 3252.7161507070387,
+      "attributed_dram_J": 447.0805205258904,
+      "job_llc_misses": 31176861023,
+      "job_llc_load_misses": 8943253269,
+      "job_llc_store_misses": 5559428262,
+      "job_dram_GB_est": 1995.319105472,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 25.001033873995766,
+      "energy_J": [
+        1806.271865,
+        267.122027,
+        1821.761023,
+        231.583783
+      ],
+      "job_cpu_s": 198.844316,
+      "scope_busy_cpu_s": 212.80999999999997,
+      "node_busy_cpu_s": 212.79999999999998,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 3397.317523476184,
+      "attributed_dram_J": 467.17599817385354,
+      "job_llc_misses": 32496363852,
+      "job_llc_load_misses": 9322004511,
+      "job_llc_store_misses": 5794215362,
+      "job_dram_GB_est": 2079.767286528,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 26.00103202019818,
+      "energy_J": [
+        1879.00233,
+        277.929366,
+        1893.949131,
+        240.934363
+      ],
+      "job_cpu_s": 206.81218199999998,
+      "scope_busy_cpu_s": 220.82999999999998,
+      "node_busy_cpu_s": 220.79999999999998,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 3541.2940534730938,
+      "attributed_dram_J": 487.2028806465286,
+      "job_llc_misses": 33816437321,
+      "job_llc_load_misses": 9700996786,
+      "job_llc_store_misses": 6029058074,
+      "job_dram_GB_est": 2164.251988544,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 27.001053088111803,
+      "energy_J": [
+        1952.558294,
+        288.765728,
+        1966.972809,
+        250.306317
+      ],
+      "job_cpu_s": 214.77758799999998,
+      "scope_busy_cpu_s": 229.57999999999998,
+      "node_busy_cpu_s": 229.57999999999998,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 3674.730208886197,
+      "attributed_dram_J": 505.5991596769625,
+      "job_llc_misses": 35135636285,
+      "job_llc_load_misses": 10079630577,
+      "job_llc_store_misses": 6263710129,
+      "job_dram_GB_est": 2248.68072224,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 28.001031631138176,
+      "energy_J": [
+        2025.27045,
+        299.539438,
+        2039.182097,
+        259.662496
+      ],
+      "job_cpu_s": 222.74605499999998,
+      "scope_busy_cpu_s": 237.58999999999997,
+      "node_busy_cpu_s": 237.58999999999997,
+      "job_mem_MB": 8352.284672,
+      "attributed_package_J": 3818.9002143926077,
+      "attributed_dram_J": 525.6246723124385,
+      "job_llc_misses": 36454958505,
+      "job_llc_load_misses": 10458358142,
+      "job_llc_store_misses": 6498484194,
+      "job_dram_GB_est": 2333.11734432,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 29.001065642107278,
+      "energy_J": [
+        2098.186401,
+        310.321791,
+        2111.644314,
+        269.035123
+      ],
+      "job_cpu_s": 230.71339199999997,
+      "scope_busy_cpu_s": 245.83999999999997,
+      "node_busy_cpu_s": 245.86999999999998,
+      "job_mem_MB": 8352.817152,
+      "attributed_package_J": 3959.2974091681976,
+      "attributed_dram_J": 545.0890987231367,
+      "job_llc_misses": 37773510131,
+      "job_llc_load_misses": 10836794984,
+      "job_llc_store_misses": 6733043179,
+      "job_dram_GB_est": 2417.504648384,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 30.00104276300408,
+      "energy_J": [
+        2170.235288,
+        321.076115,
+        2183.946802,
+        278.449657
+      ],
+      "job_cpu_s": 238.67959299999998,
+      "scope_busy_cpu_s": 253.97999999999996,
+      "node_busy_cpu_s": 253.98999999999998,
+      "job_mem_MB": 8352.309248,
+      "attributed_package_J": 4100.566704976106,
+      "attributed_dram_J": 564.8273268273698,
+      "job_llc_misses": 39091588538,
+      "job_llc_load_misses": 11215215484,
+      "job_llc_store_misses": 6967658629,
+      "job_dram_GB_est": 2501.861666432,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 31.00104591809213,
+      "energy_J": [
+        2229.873258,
+        327.900084,
+        2242.837886,
+        283.259166
+      ],
+      "job_cpu_s": 242.209806,
+      "scope_busy_cpu_s": 257.71999999999997,
+      "node_busy_cpu_s": 257.78,
+      "job_mem_MB": 10.42432,
+      "attributed_package_J": 4212.4471347377375,
+      "attributed_dram_J": 575.8082506965713,
+      "job_llc_misses": 39671840212,
+      "job_llc_load_misses": 11382182886,
+      "job_llc_store_misses": 7071015688,
+      "job_dram_GB_est": 2538.997773568,
+      "mem_term_J": null
+    },
+    {
+      "t_s": 31.001747807022184,
+      "energy_J": [
+        2229.922819,
+        327.903664,
+        2242.88525,
+        283.260497
+      ],
+      "job_cpu_s": 242.210409,
+      "scope_busy_cpu_s": 257.71999999999997,
+      "node_busy_cpu_s": 257.78,
+      "job_mem_MB": 10.42432,
+      "attributed_package_J": 4212.4471347377375,
+      "attributed_dram_J": 575.8082506965713,
+      "job_llc_misses": 39671840212,
+      "job_llc_load_misses": 11382182886,
+      "job_llc_store_misses": 7071015688,
+      "job_dram_GB_est": 2538.997773568,
+      "mem_term_J": null
+    }
+  ]
+}

@@ -36,8 +36,8 @@ python3 rapl_reader.py --list | tee "$OUT/domains.txt"
 echo
 
 python3 rapl_cgroup_reader.py --interval "$INTERVAL" --duration "$IDLE_S" --out "$OUT/w0_idle" --label "w0_idle: idle baseline (${IDLE_S}s)"
-echo; echo "================ cpu-only control: ${PROCS} procs numpy matmul (cache resident)"
-python3 rapl_cgroup_reader.py --interval "$INTERVAL" --out "$OUT/cpu${PROCS}" --label "cpu${PROCS}: ${PROCS} procs matmul, cache-resident (${LOAD_S}s)" \
+echo; echo "================ CPU-bound control: ${PROCS} procs numpy matmul"
+python3 rapl_cgroup_reader.py --interval "$INTERVAL" --out "$OUT/cpu${PROCS}" --label "cpu${PROCS}: ${PROCS} procs matmul, CPU-bound control (${LOAD_S}s)" \
     -- python3 workloads/ncores.py --procs "$PROCS" --seconds "$LOAD_S"
 for mb in $SIZES_MB; do
   echo; echo "================ working set ${mb} MB x ${PROCS} procs"
